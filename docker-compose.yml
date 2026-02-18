@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestordeopiniones_db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: GestorDeOpinionesDB
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gestordeopiniones_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d GestorDeOpinionesDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gestordeopiniones_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: GestorDeOpinionesDB
+      DB_USERNAME: root
+      DB_PASSWORD: admin
+    ports:
+      - "3005:3005"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - gestordeopiniones_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  gestordeopiniones_network:
+    driver: bridge
